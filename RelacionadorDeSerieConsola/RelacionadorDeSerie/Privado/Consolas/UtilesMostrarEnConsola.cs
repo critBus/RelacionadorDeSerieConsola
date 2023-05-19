@@ -140,7 +140,7 @@ namespace RelacionadorDeSerie.Privado.Consolas
 		)
 		{
 			cwl("Nombre:" + dn.NombreAdaptado);
-			cwl("Calve:" + dn.Clave);
+			cwl("Clave:" + dn.Clave);
 			cwl("Tipo de nombre:" + dn.getTipoDeNombre());
 			mostrarDatosNumericosDeNombreDeSerie(dn, url, nombreUrl); 
 		}
@@ -169,7 +169,7 @@ namespace RelacionadorDeSerie.Privado.Consolas
 		                                                 , DatosDeNombreSerie dn = null)
 		{
 			if (d != null) {
-				string temporada = d.TieneTemporada ? " T=" + d.Temporada : "";
+				string temporada = d.tieneTemporada_Unica() ? " T=" + d.getTemporada() : "";
 				string esSoloNumero = d.EsSoloNumeros ? " sn" : "";
 				//string alFinal = temporada + esSoloNumero + " i=" + d.IndiceDeInicioDespuesDeLosNumeros;
 				string alFinal = temporada + esSoloNumero; //+ " " + dn.Clave;
@@ -177,15 +177,15 @@ namespace RelacionadorDeSerie.Privado.Consolas
 					alFinal += " | " + dn.Clave + " | " + dn.NombreAdaptado;
 				}
 				alFinal += " " + d.TipoDeNombre;
-				if (d.EsConjuntoDeCapitulos) {
-					cwl(d.CapituloInicial + " - " + d.CapituloFinal + alFinal);
+				if (d.esConjuntoDeCapitulos()) {
+					cwl(d.getCapituloInicial() + " - " + d.getCapituloFinal() + alFinal);
 					//cwl(d.CapituloInicial + " - " + d.CapituloFinal + alFinal);
 				} else {
-					if (d.EsContenedorDeTemporada) {
+					if (d.esConjuntoDeCapitulos()) {
 						//cwl("c " + alFinal);
-						cwl("c=" + d.CantidadDeCapitulosQueContiene + " " + alFinal);
+						cwl("c=" + d.getCantidadDeCapitulos() + " " + alFinal);
 					} else {
-						cwl(d.Capitulo + alFinal);//+" :"
+						cwl(d.getCapituloInicial() + alFinal);//+" :"
 						//cwl(d.Capitulo + alFinal);
 					}
 						
@@ -193,7 +193,7 @@ namespace RelacionadorDeSerie.Privado.Consolas
 				//awStringIndices(5, f.Name);
 				UtilesConsola.cwStringIndices(5, nombreUrl);
 				//return !d.EsContenedorDeTemporada;
-				cwl("fue capitulo =" + !d.EsContenedorDeTemporada);
+				cwl("fue capitulo =" + !d.esConjuntoDeCapitulos());
 					
 			} else {
 				cwl("null " + url);

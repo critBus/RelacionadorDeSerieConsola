@@ -243,7 +243,9 @@ namespace RelacionadorDeSerie.Privado
                 //salio de df.Ldns.Count > 0
                 lr.Add(c);
             }
-
+            //if (lr.Count>0) {
+            //    cwl("vamos a ver");
+            //}
             return lr;
         }
         public static List<Capitulo_R> getCapitulosR(TemporadaDeSerie t, Serie_R serieAlQuePertenecen = null)

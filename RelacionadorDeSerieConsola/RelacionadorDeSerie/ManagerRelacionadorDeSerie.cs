@@ -30,7 +30,7 @@ using ReneUtiles.Clases.Multimedia.Series.Recorredores;
 using ReneUtiles.Clases.Multimedia.Series.Procesadores;
 using ReneUtiles.Clases.Multimedia.Series.Procesadores.Buscadores;
 using ReneUtiles.Clases.Multimedia.Series.Procesadores.Buscadores.Datos;
-using ReneUtiles.Clases.Multimedia.Series.Procesadores.Conjuntos;
+using ReneUtiles.Clases.Multimedia.Series.Procesadores.Conjuntos; 
 using RelacionadorDeSerie.Representaciones;
 using ReneUtiles.Clases.BD;
 using ReneUtiles.Clases.BD.SesionEstorage;
@@ -246,7 +246,7 @@ namespace RelacionadorDeSerie
             {
                 ld.Add(new DireccionDeActualizadorPropia(
                     url: dm.url,
-                    seleccioniada: dm.seleccionada,
+                    seleccioniada: dm.seleccionada??false,
                     seccion: seccion,
                     categoria: categoria,
 
@@ -271,7 +271,7 @@ namespace RelacionadorDeSerie
             {
                 ld.Add(new DireccionDeActualizadorPropia(
                     url: dm.url,
-                    seleccioniada: dm.seleccionada,
+                    seleccioniada:dm.seleccionada??false,
                     categoria: TipoDeCategoriaPropias.get(dm.categoria),
                     seccion: seccion,//TipoDeCategoriaPropias.get(dm.tipo_de_seccion),
                     id: dm.idkey
@@ -294,7 +294,7 @@ namespace RelacionadorDeSerie
             {
                 ld.Add(new DireccionDeActualizadorPropia(
                     url: dm.url,
-                    seleccioniada: dm.seleccionada,
+                    seleccioniada:dm.seleccionada??false,
                     categoria: TipoDeCategoriaPropias.get(dm.categoria),
                     seccion: TipoDeSeccion.get(dm.seccion),//TipoDeCategoriaPropias.get(dm.tipo_de_seccion),
                     id: dm.idkey
@@ -316,7 +316,7 @@ namespace RelacionadorDeSerie
             {
                 ld.Add(new DireccionDeActualizadorPropia(
                     url: dm.url,
-                    seleccioniada: dm.seleccionada,
+                    seleccioniada:dm.seleccionada??false,
                     seccion: TipoDeSeccion.get(dm.seccion),
                     categoria: TipoDeCategoriaPropias.get(dm.categoria),
 
@@ -405,7 +405,7 @@ namespace RelacionadorDeSerie
 
             //cwl("cantidad de direcciones="+ld.Count);
 
-            ld = from e in ld where e.seleccionada select e;
+            ld = from e in ld where e.seleccionada??false select e;
 
 
             if (seccion == TipoDeSeccion.ANIME)
@@ -452,14 +452,14 @@ namespace RelacionadorDeSerie
 
                 //cwl("cantidad de direcciones="+ld.Count);
 
-                ld = (from e in ld where e.seleccionada select e).ToList();
+                ld = (from e in ld where e.seleccionada??false select e).ToList();
 
 
                 if (seccion == TipoDeSeccion.ANIME)
                 {
                     this.animes.usarCarpeta = this.usarCarpeta_Series;
 
-                    this.animes.actualizar(ld);
+                    this.animes.actualizarSolo(categorias,ld);
 
                     this.mngPaquete.animes.actualizar_Convinaciones(null, categorias.ToArray());
                 }
@@ -467,7 +467,7 @@ namespace RelacionadorDeSerie
                 {
                     this.seriesPersona.usarCarpeta = this.usarCarpeta_Series;
 
-                    this.seriesPersona.actualizar(ld);
+                    this.seriesPersona.actualizarSolo(categorias, ld);
 
                     this.mngPaquete.seriesPersona.actualizar_Convinaciones(null, categorias.ToArray());
                 }
@@ -536,6 +536,9 @@ namespace RelacionadorDeSerie
             ConjuntoDeSeries cn
                                                             , TipoDeFiltroPropio? filtro)
         {
+            //if (!cn.isEmpty()) {
+            //    cwl("vamos a ver 2");
+            //}
             if (filtro != null)
             {
                 if (filtro == TipoDeFiltroPropio.FALTANTES_TODO)
@@ -620,7 +623,7 @@ namespace RelacionadorDeSerie
         }
 
         private List<Url_Tipo> parseYSeleccionar(List<DireccionDePaquete_MD> ld) {
-            List<Url_Tipo> lurls = (from u in ld where u.seleccionada select new Url_Tipo { url = u.url, esCarpeta = TipoDeDestino.get(u.tipo_de_destino) == TipoDeDestino.CARPETA }).ToList();
+            List<Url_Tipo> lurls = (from u in ld where u.seleccionada??false select new Url_Tipo { url = u.url, esCarpeta = TipoDeDestino.get(u.tipo_de_destino) == TipoDeDestino.CARPETA }).ToList();
             return lurls;
         }
 
@@ -644,7 +647,7 @@ namespace RelacionadorDeSerie
                 Dictionary<ConjuntoDeEtiquetasDeSerie, List<Url_Tipo>> dTags = ConjuntoDeEtiquetasDeSerie.getNewDictionary<List<Url_Tipo>>();
                 foreach (DireccionDePaquete_MD d in ld)
                 {
-                    if (d.seleccionada)
+                    if (d.seleccionada??false)
                     {
                         List<EtiquetaDeDireccionPaquete_MD> le = d.getListaDe_EtiquetaDeDireccionPaquete_MD();
                         ConjuntoDeEtiquetasDeSerie c = new ConjuntoDeEtiquetasDeSerie(from t in le select TipoDeEtiquetaDeSerie.get(t.nombre));
@@ -703,7 +706,7 @@ namespace RelacionadorDeSerie
 
             foreach (DireccionDePaquete_MD d in ld)
             {
-                if (d.seleccionada)
+                if (d.seleccionada??false)
                 {
                     ConjuntoDeEtiquetasDeSerie cn
                     = ConjuntoDeEtiquetasDeSerie.getNewConjunto(from e in d.getListaDe_EtiquetaDeDireccionPaquete_MD()
@@ -855,7 +858,7 @@ namespace RelacionadorDeSerie
 
             Func<DireccionDePaquete_MD, DireccionDePaquete> parse = d => new DireccionDePaquete(
                           url: d.url
-                          , seleccionada: d.seleccionada
+                          , seleccionada: d.seleccionada??false
                           , seccion: TipoDeSeccion.get(d.seccion)
                           , etiquetas: ConjuntoDeEtiquetasDeSerie.getNewConjunto((from e in d.getListaDe_EtiquetaDeDireccionPaquete_MD()
                                                                                   select TipoDeEtiquetaDeSerie.get(e.nombre)).ToList())

@@ -98,6 +98,126 @@ namespace RelacionadorDeSerie.Privado
             return this.seriesPropias[categoria];
         }
 
+        public void actualizarSolo(IEnumerable<TipoDeCategoriaPropias> categorias, IEnumerable<Direccion_MD> urls) {
+            Dictionary<TipoDeCategoriaPropias, List<Direccion_MD>> dc = TipoDeCategoriaPropias.getNewDictionary<List<Direccion_MD>>();
+            foreach (Direccion_MD d in urls)
+            {
+                TipoDeCategoriaPropias t = TipoDeCategoriaPropias.get(d.categoria);
+                if (!dc.ContainsKey(t)) {
+                    dc.Add(t, new List<Direccion_MD>());
+                }
+                dc[t].Add(d);
+            }
+            todasLasSeries = new ConjuntoDeSeries(prs, this.cf);
+            foreach (var v in dc)
+            {
+                seriesPropias[v.Key] = new ConjuntoDeSeries(prs, this.cf);
+                foreach (var d in v.Value)
+                {
+                    AgregarSeriesDeSerNecesario(d);
+                }
+                
+            }
+            actualizarTodasLasSeries_SinResetearTodasLasSeries();
+        }
+        private void actualizarTodasLasSeries_SinResetearTodasLasSeries() {
+            
+            foreach (ConjuntoDeSeries cn in seriesPropias.Values)
+            {
+                todasLasSeries.unirCon(cn.getCopia());
+            }
+        }
+        public void AgregarSeriesDeSerNecesario(Direccion_MD d) {
+
+            if (d.seleccionada ?? false)
+            {
+                TipoDeDestino td = TipoDeDestino.get(d.tipo_de_destino);
+                FileSystemInfo fs = null;//td == TipoDeDestino.CARPETA ? new DirectoryInfo(d.url) : new FileInfo(d.url);
+                if (td == TipoDeDestino.CARPETA)
+                {
+                    fs = new DirectoryInfo(d.url);
+                }
+                else
+                {
+                    fs = new FileInfo(d.url);
+                }
+                if (fs.Exists)
+                {
+                    ConjuntoDeSeries series = new ConjuntoDeSeries(this.prs, this.cf);
+
+                    ContextoDeConjuntoDeSeries contextoDeConjunto = new ContextoDeConjuntoDeSeries();
+                    ContextoDeSerie ctxT = new ContextoDeSerie();
+                    ctxT.Url = d.url;
+                    ctxT.F = fs;
+                    ctxT.Parent = fs is DirectoryInfo ? ((DirectoryInfo)fs).Parent : ((FileInfo)fs).Directory;
+                    ctxT.EsArchivo = td == TipoDeDestino.TXT;
+                    ctxT.EsCarpeta = td == TipoDeDestino.CARPETA;
+                    ctxT.EsSoloNombre = false;
+                    ctxT.EsVideo = false;
+                    DatosDePosicionDeRecorridoDeSeries dps = new DatosDePosicionDeRecorridoDeSeries(
+                                                                 contexto: ctxT
+
+                                                             );
+                    RecorredorDeTXT recoTXT = null;
+                    if (td == TipoDeDestino.TXT)
+                    {
+
+                        recoTXT = new RecorredorDeTXT(
+                            contextoDeConjunto: contextoDeConjunto
+                            , procesador: this.pro
+                            , dpr: dps
+                            , series: series);
+                        recoTXT.recorrer();
+                    }
+
+
+
+
+
+                    TipoDeCategoriaPropias categoria = TipoDeCategoriaPropias.get(d.categoria);
+
+                    if (or(categoria
+                          , TipoDeCategoriaPropias.FINALIZADAS
+                         , TipoDeCategoriaPropias.EN_ESPERA
+                        , TipoDeCategoriaPropias.POR_ENTRAR))
+                    {
+                        if (td == TipoDeDestino.CARPETA)
+                        {
+                            RecorredorConjuntoDeSeries recoConjunto = new RecorredorConjuntoDeSeries(
+                                                                          contextoDeConjunto: contextoDeConjunto
+                            , procesador: this.pro
+                            , dpr: dps
+                            , series: series);
+                            recoConjunto.usarCarpeta = this.usarCarpeta;
+                            recoConjunto.recorrer();
+                        }
+                    }
+                    else if (categoria == TipoDeCategoriaPropias.SEGUIDAS)
+                    {
+                        if (td == TipoDeDestino.CARPETA)
+                        {
+                            RecorredorDeDirectorioCapitulosSueltos recoSueltos = new RecorredorDeDirectorioCapitulosSueltos(
+                                                                                     contextoDeConjunto: contextoDeConjunto
+                            , procesador: this.pro
+                            , dpr: dps
+                            , series: series);
+                            recoSueltos.usarCarpeta = this.usarCarpeta;
+                            recoSueltos.recorrer();
+                        }
+                    }
+                    //UtilesMostrarEnConsola.mostrarConjuntoDeSeries(series);
+
+                    getSeriesPropias(categoria).unirCon(series);
+                }
+
+
+
+
+
+            }
+
+        }
+
         public void actualizar(IEnumerable<Direccion_MD> urls)
         {
             resetear();
@@ -107,101 +227,13 @@ namespace RelacionadorDeSerie.Privado
 
             foreach (Direccion_MD d in urls)
             {
-                if (d.seleccionada)
-                {
-                    TipoDeDestino td = TipoDeDestino.get(d.tipo_de_destino);
-                    FileSystemInfo fs = null;//td == TipoDeDestino.CARPETA ? new DirectoryInfo(d.url) : new FileInfo(d.url);
-                    if (td == TipoDeDestino.CARPETA)
-                    {
-                        fs = new DirectoryInfo(d.url);
-                    }
-                    else
-                    {
-                        fs = new FileInfo(d.url);
-                    }
-                    if (fs.Exists)
-                    {
-                        ConjuntoDeSeries series = new ConjuntoDeSeries(this.prs, this.cf);
-
-                        ContextoDeConjuntoDeSeries contextoDeConjunto = new ContextoDeConjuntoDeSeries();
-                        ContextoDeSerie ctxT = new ContextoDeSerie();
-                        ctxT.Url = d.url;
-                        ctxT.F = fs;
-                        ctxT.Parent = fs is DirectoryInfo ? ((DirectoryInfo)fs).Parent : ((FileInfo)fs).Directory;
-                        ctxT.EsArchivo = td == TipoDeDestino.TXT;
-                        ctxT.EsCarpeta = td == TipoDeDestino.CARPETA;
-                        ctxT.EsSoloNombre = false;
-                        ctxT.EsVideo = false;
-                        DatosDePosicionDeRecorridoDeSeries dps = new DatosDePosicionDeRecorridoDeSeries(
-                                                                     contexto: ctxT
-
-                                                                 );
-                        RecorredorDeTXT recoTXT = null;
-                        if (td == TipoDeDestino.TXT)
-                        {
-
-                            recoTXT = new RecorredorDeTXT(
-                                contextoDeConjunto: contextoDeConjunto
-                                , procesador: this.pro
-                                , dpr: dps
-                                , series: series);
-                            recoTXT.recorrer();
-                        }
 
 
-
-
-
-                        TipoDeCategoriaPropias categoria = TipoDeCategoriaPropias.get(d.categoria);
-
-                        if (or(categoria
-                              , TipoDeCategoriaPropias.FINALIZADAS
-                             , TipoDeCategoriaPropias.EN_ESPERA
-                            , TipoDeCategoriaPropias.POR_ENTRAR))
-                        {
-                            if (td == TipoDeDestino.CARPETA)
-                            {
-                                RecorredorConjuntoDeSeries recoConjunto = new RecorredorConjuntoDeSeries(
-                                                                              contextoDeConjunto: contextoDeConjunto
-                                , procesador: this.pro
-                                , dpr: dps
-                                , series: series);
-                                recoConjunto.usarCarpeta = this.usarCarpeta;
-                                recoConjunto.recorrer();
-                            }
-                        }
-                        else if (categoria == TipoDeCategoriaPropias.SEGUIDAS)
-                        {
-                            if (td == TipoDeDestino.CARPETA)
-                            {
-                                RecorredorDeDirectorioCapitulosSueltos recoSueltos = new RecorredorDeDirectorioCapitulosSueltos(
-                                                                                         contextoDeConjunto: contextoDeConjunto
-                                , procesador: this.pro
-                                , dpr: dps
-                                , series: series);
-                                recoSueltos.usarCarpeta = this.usarCarpeta;
-                                recoSueltos.recorrer();
-                            }
-                        }
-                        //UtilesMostrarEnConsola.mostrarConjuntoDeSeries(series);
-
-                        getSeriesPropias(categoria).unirCon(series);
-                    }
-
-
-
-
-
-                }
-
-
+                AgregarSeriesDeSerNecesario(d);
             }
 
 
-            foreach (ConjuntoDeSeries cn in seriesPropias.Values)
-            {
-                todasLasSeries.unirCon(cn.getCopia());
-            }
+            actualizarTodasLasSeries_SinResetearTodasLasSeries();
         }
 
         /// <summary>
